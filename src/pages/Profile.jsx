@@ -1,10 +1,15 @@
-import { getAuth } from "firebase/auth";
+import { getAuth, updateProfile } from "firebase/auth";
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
+import { db } from "../firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function Profile() {
   const auth = getAuth();
   const navigate = useNavigate();
+  const [changeProfile, setChangeProfile] = useState(false);
+
   const [formData, setFormData] = useState({
     name: auth.currentUser.displayName,
     email: auth.currentUser.email,
@@ -17,6 +22,41 @@ export default function Profile() {
     navigate("/");
   }
 
+  function onChangeProfile() {
+    changeProfile && onSubmit();
+    setChangeProfile((prevState) => !prevState);
+  }
+
+  function onChange(e) {
+    setFormData((prevState) => {
+      return {
+        ...prevState,
+        [e.target.id]: e.target.value,
+      };
+    });
+  }
+
+  async function onSubmit() {
+    try {
+      // Update display name in the firestore auth
+      if (auth.currentUser.displayName !== name) {
+        await updateProfile(auth.currentUser, {
+          displayName: name,
+        });
+
+        // Update the name in the firestore
+        const docRef = doc(db, "users", auth.currentUser.uid);
+        updateDoc(docRef, {
+          name: name,
+        });
+
+        toast.success("Profile updated");
+      }
+    } catch (error) {
+      toast.error("Profile is not updated");
+    }
+  }
+
   return (
     <section>
       <h1 className="text-3xl text-center mt-6 font-bold">Profile</h1>
@@ -27,8 +67,11 @@ export default function Profile() {
             type="text"
             id="name"
             value={name}
-            disabled
-            className="mb-6 w-full px-4 text-gray-700 bg-white text-xl border border-gray-300 rounded transition ease-in-out"
+            disabled={!changeProfile}
+            onChange={onChange}
+            className={`mb-6 w-full px-4 text-gray-700 bg-white text-xl border border-gray-300 rounded transition ease-in-out ${
+              changeProfile && "bg-red-200"
+            } `}
           />
           {/* Email Input */}
           <input
@@ -42,8 +85,11 @@ export default function Profile() {
           <div className="flex justify-between whitespace-nowrap text-sm md:text-lg">
             <p>
               Do you want to change your name?{" "}
-              <span className="text-red-600 hover:text-red-700 transition cursor-pointer ml-1 ease-in-out">
-                Edit
+              <span
+                onClick={onChangeProfile}
+                className="text-red-600 hover:text-red-700 transition cursor-pointer ml-1 ease-in-out"
+              >
+                {changeProfile ? "Apply Changes" : "Edit"}
               </span>
             </p>
             <p
