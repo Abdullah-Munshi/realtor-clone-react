@@ -1,17 +1,27 @@
 import { getAuth, updateProfile } from "firebase/auth";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import { db } from "../firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { FcHome } from "react-icons/fc";
 import { Link } from "react-router-dom";
+import ListItem from "../components/ListItem";
 
 export default function Profile() {
   const auth = getAuth();
   const navigate = useNavigate();
   const [changeProfile, setChangeProfile] = useState(false);
-
+  const [listings, setListings] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: auth.currentUser.displayName,
     email: auth.currentUser.email,
@@ -58,6 +68,36 @@ export default function Profile() {
       toast.error("Profile is not updated");
     }
   }
+
+  useEffect(() => {
+    async function fetchUserListings() {
+      try {
+        const listingRef = collection(db, "listings");
+        const q = query(
+          listingRef,
+          where("userRef", "==", auth.currentUser.uid),
+          orderBy("timestamp", "desc")
+        );
+
+        const querySnap = await getDocs(q);
+        let listings = [];
+
+        querySnap.forEach((doc) => {
+          return listings.push({
+            id: doc.id,
+            data: doc.data(),
+          });
+        });
+
+        setListings(listings);
+        setLoading(false);
+      } catch (error) {
+        toast.error("Listing is not valid");
+      }
+    }
+
+    fetchUserListings();
+  }, [auth.currentUser.uid]);
 
   return (
     <section>
@@ -114,6 +154,26 @@ export default function Profile() {
             Sell or Rent your home
           </Link>
         </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-3 mt-6">
+        {!loading && listings.length > 0 && (
+          <>
+            <h1 className="text-3xl font-semibold text-center">My Listings</h1>
+
+            <ul>
+              {listings.map((listing) => {
+                return (
+                  <ListItem
+                    key={listing.id}
+                    id={listing.id}
+                    listing={listing.data}
+                  />
+                );
+              })}
+            </ul>
+          </>
+        )}
       </div>
     </section>
   );

@@ -140,6 +140,7 @@ export default function CreateListing() {
     ).catch((error) => {
       setLoading(false);
       toast.error("Images are not uploaded");
+      return;
     });
 
     const formDataCopy = {
@@ -147,6 +148,7 @@ export default function CreateListing() {
       imgUrls,
       geolocation,
       timestamp: serverTimestamp(),
+      userRef: auth.currentUser.uid,
     };
 
     delete formDataCopy.images;
