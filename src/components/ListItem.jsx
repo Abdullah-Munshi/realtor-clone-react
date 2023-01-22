@@ -48,7 +48,9 @@ export default function ListItem({ listing, id, onEdit, onDelete }) {
             </div>
             <div className="flex items-center space-x-1">
               <p className="font-bold text-xs">
-                {listing.bathrooms > 1 ? `${listing.bathrooms} Bats` : "1 Bath"}
+                {listing.bathrooms > 1
+                  ? `${listing.bathrooms} Baths`
+                  : "1 Bath"}
               </p>
             </div>
           </div>
